@@ -1,0 +1,107 @@
+# grid pathfinding dfs bfs iddfs, operators: up left right down
+from collections import deque
+
+MOVES = [(-1,0),(0,-1),(0,1),(1,0)]
+NAMES = ["U","L","R","D"]
+
+def valid(pos, width, height, blocked):
+    r,c = pos
+    return 0<=r<height and 0<=c<width and pos not in blocked
+
+def neighbors(pos, width, height, blocked):
+    out = []
+    for (dr,dc), name in zip(MOVES, NAMES):
+        n = (pos[0]+dr, pos[1]+dc)
+        if valid(n, width, height, blocked):
+            out.append((n, name))
+    return out
+
+def dfs(start, goal, width, height, blocked):
+    stack = [(start, [])]
+    seen = set()
+    while stack:
+        node, path = stack.pop()
+        if node == goal:
+            return path
+        if node in seen:
+            continue
+        seen.add(node)
+        for nxt, move in reversed(neighbors(node,width,height,blocked)):
+            stack.append((nxt, path+[move]))
+    return None
+
+def bfs(start, goal, width, height, blocked):
+    queue = deque([(start, [])])
+    seen = {start}
+    while queue:
+        node, path = queue.popleft()
+        if node == goal:
+            return path
+        for nxt, move in neighbors(node,width,height,blocked):
+            if nxt not in seen:
+                seen.add(nxt)
+                queue.append((nxt, path+[move]))
+    return None
+
+def dls(node, goal, depth, width, height, blocked, seen):
+    if node == goal:
+        return []
+    if depth == 0:
+        return None
+    seen.add(node)
+    for nxt, move in neighbors(node,width,height,blocked):
+        if nxt not in seen:
+            rest = dls(nxt, goal, depth-1, width, height, blocked, seen)
+            if rest is not None:
+                return [move] + rest
+    seen.remove(node)
+    return None
+
+def iddfs(start, goal, width, height, blocked, max_depth=200):
+    for d in range(max_depth):
+        result = dls(start, goal, d, width, height, blocked, set())
+        if result is not None:
+            return result, d
+    return None, None
+
+def fmt(path):
+    if path is None:
+        return "No path found the goal may be positioned out of grid"
+    return " ".join(path) if path else "(already at goal)"
+
+def read_input():
+    s = input(prompt + " (" + example + "): ").strip().split()
+    if len(s) == 2:
+        try:
+            return int(s[0]), int(s[1])
+        except ValueError:
+            pass
+
+
+def main():
+    print("Grid path S to G, order: up left right down\n")
+    width = int(input("width of grid: "))
+    height = int(input("height of grid: "))
+    print("row and col start at 0 0  (valid row 0 to " + str(height-1) + ", col 0 to " + str(width-1) + ")")
+    row,col = read_input("start row col number space and another number e.g. 0 0")
+    goal_row,goal_col = read_input("goal row col number space and another number e.g. 0 0")
+    start = (row,col)
+    goal = (goal_row,goal_col)
+    n = int(input("add number of forbidden squares: "))
+    blocked = set()
+    for _ in range(n):
+        r,c = read_input("FORBIDDEN row col")
+        blocked.add((r,c))
+
+    p = dfs(start,goal,width,height,blocked)
+    print("DFS:", fmt(p))
+    p = bfs(start,goal,width,height,blocked)
+    print("BFS:", fmt(p))
+    p,d = iddfs(start,goal,width,height,blocked)
+    if p is not None:
+        print("IDDFS:", fmt(p), "depth", d)
+    else:
+        print("IDDFS:", fmt(p))
+
+if __name__ == "__main__":
+    main()
